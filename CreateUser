@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Check root
+if [ "$EUID" -ne 0 ]; then
+  echo "Sila run sebagai root atau guna sudo"
+  exit 1
+fi
+
+# Input username
+read -p "Masukkan username: " USERNAME
+
+# Check user exist
+if id "$USERNAME" &>/dev/null; then
+  echo "User '$USERNAME' sudah wujud!"
+  exit 1
+fi
+
+# Input password (hidden)
+read -s -p "Masukkan password: " PASSWORD
+echo
+read -s -p "Confirm password: " PASSWORD2
+echo
+
+# Check password match
+if [ "$PASSWORD" != "$PASSWORD2" ]; then
+  echo "Password tak sama!"
+  exit 1
+fi
+
+# Input folder path
+read -p "Masukkan path folder (contoh: /data/project): " FOLDER
+
+# Create user
+useradd -m -s /bin/bash "$USERNAME"
+echo "$USERNAME:$PASSWORD" | chpasswd
+
+# Create folder kalau tak wujud
+if [ ! -d "$FOLDER" ]; then
+  mkdir -p "$FOLDER"
+  echo "Folder $FOLDER telah dibuat"
+fi
+
+# Set ownership (optional, boleh adjust)
+chown root:root "$FOLDER"
+
+# Set ACL untuk user
+setfacl -m u:$USERNAME:rwx "$FOLDER"
+
+# Default ACL (untuk file baru dalam folder)
+setfacl -d -m u:$USERNAME:rwx "$FOLDER"
+
+# Option sudo
+read -p "Nak bagi sudo access? (y/n): " SUDO
+if [[ "$SUDO" =~ ^[Yy]$ ]]; then
+  usermod -aG wheel "$USERNAME"
+fi
+
+echo "User '$USERNAME' berjaya dicipta + ACL pada $FOLDER!"
