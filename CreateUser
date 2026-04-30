@@ -9,6 +9,12 @@ fi
 # Input username
 read -p "Masukkan username: " USERNAME
 
+# Validate username kosong
+if [ -z "$USERNAME" ]; then
+  echo "Username tak boleh kosong!"
+  exit 1
+fi
+
 # Check user exist
 if id "$USERNAME" &>/dev/null; then
   echo "User '$USERNAME' sudah wujud!"
@@ -30,9 +36,28 @@ fi
 # Input folder path
 read -p "Masukkan path folder (contoh: /data/project): " FOLDER
 
+# Validate folder kosong
+if [ -z "$FOLDER" ]; then
+  echo "Folder path tak boleh kosong!"
+  exit 1
+fi
+
+# Input primary group (optional)
+read -p "Masukkan primary group (default: apache): " GROUP
+GROUP=${GROUP:-apache}
+
+# Check group wujud
+if ! getent group "$GROUP" > /dev/null; then
+  echo "Group '$GROUP' tak wujud!"
+  exit 1
+fi
+
 # Create user
 useradd -m -s /bin/bash "$USERNAME"
 echo "$USERNAME:$PASSWORD" | chpasswd
+
+# Set primary group
+usermod -g "$GROUP" "$USERNAME"
 
 # Create folder kalau tak wujud
 if [ ! -d "$FOLDER" ]; then
@@ -40,8 +65,8 @@ if [ ! -d "$FOLDER" ]; then
   echo "Folder $FOLDER telah dibuat"
 fi
 
-# Set ownership (optional, boleh adjust)
-chown root:root "$FOLDER"
+# Set ownership
+chown root:"$GROUP" "$FOLDER"
 
 # Set ACL untuk user
 setfacl -m u:$USERNAME:rwx "$FOLDER"
@@ -55,4 +80,11 @@ if [[ "$SUDO" =~ ^[Yy]$ ]]; then
   usermod -aG wheel "$USERNAME"
 fi
 
-echo "User '$USERNAME' berjaya dicipta + ACL pada $FOLDER!"
+echo "----------------------------------------"
+echo "User '$USERNAME' berjaya dicipta!"
+echo "Primary group: $GROUP"
+echo "Folder: $FOLDER"
+echo "----------------------------------------"
+
+# Show result
+id "$USERNAME"
