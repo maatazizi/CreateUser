@@ -56,14 +56,11 @@ echo "$USERNAME:$PASSWORD" | chpasswd
 usermod -g "$GROUP" "$USERNAME"
 
 # 🔥 OPTIONAL: set home directory ke /var/www/apps/<user>
-APP_HOME="/var/www/apps/$USERNAME"
-
-mkdir -p "$APP_HOME"
 
 # Kill process kalau user aktif (just in case)
 pkill -u "$USERNAME" 2>/dev/null
 
-usermod -d "$APP_HOME" "$USERNAME"
+usermod -d "$FOLDER" "$USERNAME"
 
 # Create folder kalau tak wujud
 if [ ! -d "$FOLDER" ]; then
@@ -72,7 +69,7 @@ if [ ! -d "$FOLDER" ]; then
 fi
 
 # Ownership
-chown root:"$GROUP" "$FOLDER"
+chown "$GROUP":"$GROUP" "$FOLDER"
 
 # ACL normal
 setfacl -m u:$USERNAME:rwx "$FOLDER"
